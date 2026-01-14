@@ -166,15 +166,15 @@ function Disable-NonEssentialServicesAggressive {
     <#
     .SYNOPSIS
         Aggressively disables many non-essential Windows services for maximum performance
-        and minimal background activity (good for gaming / stripped down Win10 installs)
+        and minimal background activity (ideal for gaming / stripped-down Win10 installs)
         
     .WARNING
-        This is significantly more aggressive than the moderate version.
+        This is significantly more aggressive than moderate versions.
         May break: printing, bluetooth, mobile hotspot, some location features,
-        IPv6 transitions, delivery optimization, push notifications, etc.
+        Delivery Optimization, push notifications, etc.
         
-        Recommended for: clean installs, gaming PCs, privacy-focused minimal setups
-        NOT recommended for: work PCs, laptops with many peripherals, people who print a lot
+        Recommended for clean installs, gaming PCs, privacy-focused minimal setups.
+        NOT recommended for work machines or if you use many peripherals.
     #>
 
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
@@ -183,53 +183,53 @@ function Disable-NonEssentialServicesAggressive {
     )
 
     Write-Host "`nAggressive Non-Essential Services Disable (Power-user / Gaming Mode)" -ForegroundColor Cyan
-    Write-Host "This will disable many background services — use carefully!" -ForegroundColor Yellow
+    Write-Host "This will disable many background services — use with caution!" -ForegroundColor Yellow
     Write-Host "Press Ctrl+C now if you're unsure.`n" -ForegroundColor DarkYellow
 
     $services = @(
-        # Gaming / Xbox ecosystem (very safe to disable if you don't use Xbox)
-        "XblAuthManager",           # Xbox Live Auth Manager
-        "XblGameSave",              # Xbox Live Game Save Service
-        "XboxNetApiSvc",            # Xbox Live Networking Service
-        "XboxGipSvc",               # Xbox Accessory Management Service
+        # Gaming / Xbox ecosystem
+        "XblAuthManager",
+        "XblGameSave",
+        "XboxNetApiSvc",
+        "XboxGipSvc",
 
-        # Telemetry & Diagnostics (privacy + performance)
-        "DiagTrack",                # Connected User Experiences and Telemetry
-        "dmwappushservice",         # WAP Push Message Routing Service
-        "lfsvc",                    # Geolocation Service
-        "MapsBroker",               # Downloaded Maps Manager
+        # Telemetry & Diagnostics
+        "DiagTrack",
+        "dmwappushservice",
+        "lfsvc",
+        "MapsBroker",
 
-        # Print & Scan (disable if you never print/scan)
-        #"Spooler",                 # Print Spooler ← uncomment ONLY if you never print
-        "PrintNotify",              # Printer Extensions and Notifications
-        "PrintWorkflowUserSvc_*",   # Print Workflow User Svc (wildcard)
+        # Print & Scan (disable if you never use them)
+        #"Spooler",                 # ← Only uncomment if you NEVER print
+        "PrintNotify",
+        "PrintWorkflowUserSvc_*",
 
         # Networking & Sharing (mostly legacy or P2P)
-        "AJRouter",                 # AllJoyn Router Service
-        "ALG",                      # Application Layer Gateway Service
-        "DoSvc",                    # Delivery Optimization (P2P updates)
-        "iphlpsvc",                 # IP Helper (mostly IPv6 transition tech)
-        "PeerDistSvc",              # BranchCache
-        "SharedAccess",             # Internet Connection Sharing (ICS)
-        "WMPNetworkSvc",            # Windows Media Player Network Sharing
+        "AJRouter",
+        "ALG",
+        "DoSvc",
+        "iphlpsvc",
+        "PeerDistSvc",
+        "SharedAccess",
+        "WMPNetworkSvc",
 
         # Other bloat / niche features
-        "TabletInputService",       # Touch Keyboard and Handwriting Panel
-        "RetailDemo",               # Retail Demo Service
-        "Fax",                      # Fax
-        "WbioSrvc",                 # Windows Biometric Service (fingerprint/face)
-        "icssvc",                   # Mobile Hotspot Service
-        "PhoneSvc",                 # Phone Service
-        "WalletService",            # Wallet Service
-        "CaptureService_*",         # Capture / Game Bar recording
-        "AppReadiness",             # App Readiness (mostly after initial setup)
-        "WpnService",               # Windows Push Notifications System Service
-        "WpnUserService_*",         # Windows Push Notifications User Service
-        "PcaSvc",                   # Program Compatibility Assistant
-        "TrkWks",                   # Distributed Link Tracking Client
-        "Wecsvc",                   # Windows Event Collector
-        "SCardSvr",                 # Smart Card
-        "SCPolicySvc"               # Smart Card Removal Policy
+        "TabletInputService",
+        "RetailDemo",
+        "Fax",
+        "WbioSrvc",
+        "icssvc",
+        "PhoneSvc",
+        "WalletService",
+        "CaptureService_*",
+        "AppReadiness",
+        "WpnService",
+        "WpnUserService_*",
+        "PcaSvc",
+        "TrkWks",
+        "Wecsvc",
+        "SCardSvr",
+        "SCPolicySvc"
     )
 
     Write-Host "Processing services...`n" -ForegroundColor Cyan
