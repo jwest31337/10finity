@@ -21,6 +21,7 @@ $RemoveCopilot = $true               # Remove Copilot if present (may not apply 
 $DisableWindowsUpdate = $false       # Disable Windows Update (risky, use only if you know what you're doing for post-EOL).
 $RemoveEdge = $true                  # Remove Microsoft Edge (note: may affect some features).
 $EnhancePrivacy = $true              # Additional privacy tweaks (e.g., disable location, advertising ID).
+$DisableAggressiveServices = $true   # Aggressively disable Windows System Services, except for core functionality.
 
 # Function: Remove Preinstalled Bloatware Apps
 function Remove-PreinstalledApps {
@@ -161,6 +162,127 @@ function Enhance-Privacy {
     Write-Host "Privacy enhanced."
 }
 
+function Disable-NonEssentialServicesAggressive {
+    <#
+    .SYNOPSIS
+        Aggressively disables many non-essential Windows services for maximum performance
+        and minimal background activity (good for gaming / stripped down Win10 installs)
+        
+    .WARNING
+        This is significantly more aggressive than the moderate version.
+        May break: printing, bluetooth, mobile hotspot, some location features,
+        IPv6 transitions, delivery optimization, push notifications, etc.
+        
+        Recommended for: clean installs, gaming PCs, privacy-focused minimal setups
+        NOT recommended for: work PCs, laptops with many peripherals, people who print a lot
+    #>
+
+    [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
+    param(
+        [switch]$WhatIf
+    )
+
+    Write-Host "`nAggressive Non-Essential Services Disable (Power-user / Gaming Mode)" -ForegroundColor Cyan
+    Write-Host "This will disable many background services — use carefully!" -ForegroundColor Yellow
+    Write-Host "Press Ctrl+C now if you're unsure.`n" -ForegroundColor DarkYellow
+
+    $services = @(
+        # Gaming / Xbox ecosystem (very safe to disable if you don't use Xbox)
+        "XblAuthManager",           # Xbox Live Auth Manager
+        "XblGameSave",              # Xbox Live Game Save Service
+        "XboxNetApiSvc",            # Xbox Live Networking Service
+        "XboxGipSvc",               # Xbox Accessory Management Service
+
+        # Telemetry & Diagnostics (privacy + performance)
+        "DiagTrack",                # Connected User Experiences and Telemetry
+        "dmwappushservice",         # WAP Push Message Routing Service
+        "lfsvc",                    # Geolocation Service
+        "MapsBroker",               # Downloaded Maps Manager
+
+        # Print & Scan (disable if you never print/scan)
+        #"Spooler",                 # Print Spooler ← uncomment ONLY if you never print
+        "PrintNotify",              # Printer Extensions and Notifications
+        "PrintWorkflowUserSvc_*",   # Print Workflow User Svc (wildcard)
+
+        # Networking & Sharing (mostly legacy or P2P)
+        "AJRouter",                 # AllJoyn Router Service
+        "ALG",                      # Application Layer Gateway Service
+        "DoSvc",                    # Delivery Optimization (P2P updates)
+        "iphlpsvc",                 # IP Helper (mostly IPv6 transition tech)
+        "PeerDistSvc",              # BranchCache
+        "SharedAccess",             # Internet Connection Sharing (ICS)
+        "WMPNetworkSvc",            # Windows Media Player Network Sharing
+
+        # Other bloat / niche features
+        "TabletInputService",       # Touch Keyboard and Handwriting Panel
+        "RetailDemo",               # Retail Demo Service
+        "Fax",                      # Fax
+        "WbioSrvc",                 # Windows Biometric Service (fingerprint/face)
+        "icssvc",                   # Mobile Hotspot Service
+        "PhoneSvc",                 # Phone Service
+        "WalletService",            # Wallet Service
+        "CaptureService_*",         # Capture / Game Bar recording
+        "AppReadiness",             # App Readiness (mostly after initial setup)
+        "WpnService",               # Windows Push Notifications System Service
+        "WpnUserService_*",         # Windows Push Notifications User Service
+        "PcaSvc",                   # Program Compatibility Assistant
+        "TrkWks",                   # Distributed Link Tracking Client
+        "Wecsvc",                   # Windows Event Collector
+        "SCardSvr",                 # Smart Card
+        "SCPolicySvc"               # Smart Card Removal Policy
+    )
+
+    Write-Host "Processing services...`n" -ForegroundColor Cyan
+
+    $countDisabled = 0
+    $countSkipped  = 0
+
+    foreach ($serviceName in $services) {
+        if ($serviceName -like "*_*") {
+            # Handle wildcard services
+            Get-Service -Name $serviceName -ErrorAction SilentlyContinue |
+                ForEach-Object {
+                    $name = $_.Name
+                    if ($_.StartType -eq 'Disabled') {
+                        Write-Host "   $name → Already disabled" -ForegroundColor DarkGray
+                        $countSkipped++
+                    }
+                    elseif ($PSCmdlet.ShouldProcess($name, "Stop and Disable")) {
+                        Stop-Service -Name $name -Force -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+                        Set-Service -Name $name -StartupType Disabled -ErrorAction SilentlyContinue
+                        Write-Host "   $name → Disabled" -ForegroundColor Green
+                        $countDisabled++
+                    }
+                }
+        }
+        else {
+            $svc = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+            if ($svc) {
+                if ($svc.StartType -eq 'Disabled') {
+                    Write-Host "   $($svc.Name) → Already disabled" -ForegroundColor DarkGray
+                    $countSkipped++
+                }
+                elseif ($PSCmdlet.ShouldProcess($svc.Name, "Stop and Disable")) {
+                    Stop-Service -Name $svc.Name -Force -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+                    Set-Service -Name $svc.Name -StartupType Disabled -ErrorAction SilentlyContinue
+                    Write-Host "   $($svc.Name) → Disabled" -ForegroundColor Green
+                    $countDisabled++
+                }
+            }
+            else {
+                Write-Host "   $serviceName → Not found on this system" -ForegroundColor DarkGray
+                $countSkipped++
+            }
+        }
+    }
+
+    Write-Host "`nSummary:" -ForegroundColor Cyan
+    Write-Host "Successfully disabled : $countDisabled services" -ForegroundColor Green
+    Write-Host "Already disabled / not found : $countSkipped" -ForegroundColor DarkGray
+    Write-Host "`nRecommendation: Reboot your system for full effect." -ForegroundColor DarkCyan
+    Write-Host "If something breaks → services.msc → find the service → set to Manual/Automatic`n"
+}
+
 # Main Execution
 Write-Host "Starting Windows 10 Debloat and Optimization..."
 
@@ -174,5 +296,6 @@ if ($RemoveCopilot) { Remove-Copilot }
 if ($DisableWindowsUpdate) { Disable-WindowsUpdate }
 if ($RemoveEdge) { Remove-Edge }
 if ($EnhancePrivacy) { Enhance-Privacy }
+if ($DisableAggressiveServices) { Disable-NonEssentialServicesAggressive }
 
 Write-Host "Debloat and optimization complete. Restart your computer for changes to take effect."
